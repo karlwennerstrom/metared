@@ -1,5 +1,9 @@
 const { Sequelize } = require('sequelize');
+const dns = require('dns');
 require('dotenv').config();
+
+// Forzar resolución DNS a IPv4
+dns.setDefaultResultOrder('ipv4first');
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -10,10 +14,10 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT,
     dialect: 'postgres',
     dialectOptions: {
-      ssl: process.env.NODE_ENV === 'production' ? {
+      ssl: {
         require: true,
         rejectUnauthorized: false
-      } : false
+      }
     },
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {

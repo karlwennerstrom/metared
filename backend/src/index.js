@@ -39,11 +39,9 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('Conexión a PostgreSQL establecida correctamente.');
 
-    // Sync models (in development)
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true });
-      console.log('Modelos sincronizados.');
-    }
+    // No hacer sync automático - las tablas ya existen en Supabase
+    // Si necesitas sincronizar, hazlo manualmente
+    console.log('Usando tablas existentes en la base de datos.');
 
     app.listen(PORT, () => {
       console.log(`Servidor corriendo en puerto ${PORT}`);
