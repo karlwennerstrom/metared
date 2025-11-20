@@ -1,4 +1,5 @@
 const { Sequelize } = require('sequelize');
+const pg = require('pg'); // <--- 1. IMPORTANTE: Importar pg explícitamente
 const dns = require('dns');
 require('dotenv').config();
 
@@ -17,6 +18,7 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT || (isProduction || isServerless ? 6543 : 5432),
     dialect: 'postgres',
+    dialectModule: pg, // <--- 2. IMPORTANTE: Forzar el uso del módulo pg importado
     dialectOptions: {
       ssl: {
         require: true,
@@ -25,7 +27,7 @@ const sequelize = new Sequelize(
     },
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
-      max: isServerless ? 1 : 5, // Vercel serverless necesita 1 conexión máx
+      max: isServerless ? 1 : 5, 
       min: 0,
       acquire: 30000,
       idle: 10000
