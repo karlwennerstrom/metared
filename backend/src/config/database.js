@@ -1,12 +1,7 @@
 const { Sequelize } = require('sequelize');
-const pg = require('pg'); // <--- NECESARIO
 require('dotenv').config();
 
-// Imprimir en los logs para confirmar que esto se está ejecutando
-console.log("--> Cargando configuración de base de datos...");
-console.log("--> Driver PG cargado:", !!pg);
-
-// Forzar resolución DNS a IPv4 (corrección para Node 17+)
+// Solución DNS para Node 17+ en Vercel
 const dns = require('dns');
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
@@ -22,10 +17,13 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
-    
-    // ESTA ES LA LÍNEA CLAVE. Si esto falta, falla.
-    dialectModule: pg, 
-    
+
+    // --- CAMBIO CLAVE AQUÍ ---
+    // Importamos 'pg' directamente dentro de la opción.
+    // Esto obliga a Vercel a incluir el paquete sí o sí.
+    dialectModule: require('pg'),
+    // -------------------------
+
     dialectOptions: {
       ssl: {
         require: true,
@@ -34,8 +32,7 @@ const sequelize = new Sequelize(
     },
     logging: false,
     pool: {
-      // En Vercel serverless, máx 2 conexiones para no saturar
-      max: 2,
+      max: isProduction ? 2 : 5,
       min: 0,
       acquire: 30000,
       idle: 10000
