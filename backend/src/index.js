@@ -37,7 +37,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await sequelize.authenticate();
-    console.log('Conexión a MySQL establecida correctamente.');
+    console.log('Conexión a PostgreSQL establecida correctamente.');
 
     // Sync models (in development)
     if (process.env.NODE_ENV === 'development') {

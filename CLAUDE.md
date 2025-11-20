@@ -23,20 +23,30 @@ npm run build    # Production build
 npm run preview  # Preview production build
 ```
 
-### Docker Operations
+### Deployment
 ```bash
-docker-compose up -d                  # Start all services
-docker-compose down                   # Stop all services
-docker-compose logs -f backend        # Follow backend logs
-docker exec -it metared-backend npm run seed  # Run seed inside container
+# Initialize Supabase database
+# Execute database/init-supabase.sql in Supabase SQL Editor
+
+# Deploy to Vercel (automatic via GitHub integration)
+git push origin main
+
+# Manual deployment
+vercel --prod
+
+# See DEPLOYMENT.md for detailed instructions
 ```
 
 ## Architecture
 
-### Service Ports
+### Service Ports (Development)
 - Backend API: 5000
 - Frontend: 3000
-- MySQL: 3306
+
+### Production (Vercel + Supabase)
+- Backend: Serverless functions at `/api/*`
+- Frontend: Static site
+- Database: PostgreSQL (Supabase)
 
 ### Backend Structure (`/backend/src/`)
 - `config/` - Database and JWT configuration
@@ -89,10 +99,11 @@ RESTful API at `/api/` with JWT Bearer authentication.
 
 ### Backend
 - Node.js 18+, Express.js
-- MySQL 8.0 with Sequelize ORM
+- PostgreSQL (Supabase) with Sequelize ORM
 - JWT authentication with bcryptjs
 - Fuse.js for fuzzy search
 - PDFKit for PDF generation
+- Deployed as Vercel serverless functions
 
 ### Frontend
 - React 18+ with Vite
@@ -120,21 +131,30 @@ RESTful API at `/api/` with JWT Bearer authentication.
 ## Environment Variables
 
 ### Backend (`/backend/.env`)
+- `NODE_ENV` - Environment (development/production)
 - `PORT` - Server port (5000)
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` - MySQL config
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` - PostgreSQL/Supabase config
 - `JWT_SECRET`, `JWT_EXPIRES_IN` - Authentication
 
 ### Frontend (`/frontend/.env`)
-- `VITE_API_URL` - Backend API URL (http://localhost:5000/api)
+- `VITE_API_URL` - Backend API URL
+  - Development: http://localhost:5000/api
+  - Production: https://your-domain.vercel.app/api
 
 ## Development Notes
 
-1. **CSV Import:** Place the CSV file in `/data/` directory and run `npm run seed` to import profiles.
+1. **Database:** Project migrated from MySQL to PostgreSQL (Supabase). Use `database/init-supabase.sql` to initialize tables.
 
-2. **Initial Setup:** Always create a superadmin user first with `npm run create-admin`.
+2. **CSV Import:** Place the CSV file in `/data/` directory and run `npm run seed` to import profiles.
 
-3. **Search Index:** The search index is built on first request and refreshed after profile modifications.
+3. **Initial Setup:** Execute init-supabase.sql in Supabase, then create a superadmin user with `npm run create-admin`.
 
-4. **PDF Generation:** Uses PDFKit to generate profile PDFs with UC branding.
+4. **Search Index:** Fuse.js maintains an in-memory index of published profiles. Index is refreshed after profile modifications.
 
-5. **Authentication:** JWT tokens stored in localStorage, automatically attached to requests via axios interceptors.
+5. **PDF Generation:** Uses PDFKit to generate profile PDFs with UC branding.
+
+6. **Authentication:** JWT tokens stored in localStorage, automatically attached to requests via axios interceptors.
+
+7. **Deployment:** See DEPLOYMENT.md for complete instructions on deploying to Vercel with Supabase.
+
+8. **SSL Connection:** Production database connections use SSL (configured in database.js).
