@@ -1,20 +1,16 @@
 {
   "version": 2,
   "installCommand": "cd backend && npm install",
-  "functions": {
-    "backend/api/index.js": {
-      "memory": 1024,
-      "maxDuration": 10
+  "builds": [
+    {
+      "src": "backend/api/index.js",
+      "use": "@vercel/node"
     }
-  },
-  "rewrites": [
+  ],
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/backend/api/index.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/backend/api/index.js"
+      "src": "/(.*)",
+      "dest": "/backend/api/index.js"
     }
   ]
 }
