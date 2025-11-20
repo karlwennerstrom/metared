@@ -1,14 +1,12 @@
 const { Sequelize } = require('sequelize');
-const pg = require('pg'); // <--- 1. IMPORTANTE: Importar pg explícitamente
-const dns = require('dns');
+const pg = require('pg'); // <--- 1. OBLIGATORIO: Importar pg aquí
 require('dotenv').config();
 
-// Forzar resolución DNS a IPv4
+// Ajuste para DNS en entornos Node modernos
+const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
-// En Vercel serverless SIEMPRE usa Connection Pooler
 const isProduction = process.env.NODE_ENV === 'production';
-const isServerless = process.env.VERCEL === '1';
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -16,18 +14,21 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT || (isProduction || isServerless ? 6543 : 5432),
+    port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
-    dialectModule: pg, // <--- 2. IMPORTANTE: Forzar el uso del módulo pg importado
+    
+    // <--- 2. OBLIGATORIO: Forzar el módulo aquí
+    dialectModule: pg, 
+    
     dialectOptions: {
       ssl: {
         require: true,
         rejectUnauthorized: false
       }
     },
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    logging: false,
     pool: {
-      max: isServerless ? 1 : 5, 
+      max: isProduction ? 2 : 5, // Reducir conexiones en Vercel
       min: 0,
       acquire: 30000,
       idle: 10000
