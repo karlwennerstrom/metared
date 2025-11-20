@@ -1,0 +1,128 @@
+const bcrypt = require('bcryptjs');
+const { Usuario } = require('../models');
+
+// GET /api/admin/usuarios - List all users
+const listarUsuarios = async (req, res) => {
+  try {
+    const usuarios = await Usuario.findAll({
+      attributes: ['id', 'email', 'nombre', 'rol', 'activo', 'created_at'],
+      order: [['created_at', 'DESC']]
+    });
+
+    res.json({
+      data: usuarios,
+      total: usuarios.length
+    });
+  } catch (error) {
+    console.error('Error listando usuarios:', error);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+};
+
+// POST /api/admin/usuarios - Create new user
+const crearUsuario = async (req, res) => {
+  try {
+    const { email, password, nombre, rol } = req.body;
+
+    if (!email || !password || !nombre) {
+      return res.status(400).json({ error: 'Email, contraseña y nombre son requeridos' });
+    }
+
+    // Check if email already exists
+    const existente = await Usuario.findOne({ where: { email } });
+    if (existente) {
+      return res.status(400).json({ error: 'El email ya está registrado' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const usuario = await Usuario.create({
+      email,
+      password: passwordHash,
+      nombre,
+      rol: rol || 'editor'
+    });
+
+    res.status(201).json({
+      id: usuario.id,
+      email: usuario.email,
+      nombre: usuario.nombre,
+      rol: usuario.rol,
+      activo: usuario.activo
+    });
+  } catch (error) {
+    console.error('Error creando usuario:', error);
+    res.status(500).json({ error: 'Error al crear usuario' });
+  }
+};
+
+// PUT /api/admin/usuarios/:id - Update user
+const actualizarUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const usuario = await Usuario.findByPk(id);
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const { nombre, password, rol } = req.body;
+    const updateData = {};
+
+    if (nombre) updateData.nombre = nombre;
+    if (rol) updateData.rol = rol;
+
+    // Hash new password if provided
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(password, salt);
+    }
+
+    await usuario.update(updateData);
+
+    res.json({
+      id: usuario.id,
+      email: usuario.email,
+      nombre: usuario.nombre,
+      rol: usuario.rol,
+      activo: usuario.activo
+    });
+  } catch (error) {
+    console.error('Error actualizando usuario:', error);
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
+};
+
+// DELETE /api/admin/usuarios/:id - Deactivate user
+const eliminarUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const usuario = await Usuario.findByPk(id);
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Prevent self-deletion
+    if (req.usuario.id === parseInt(id)) {
+      return res.status(400).json({ error: 'No puedes desactivarte a ti mismo' });
+    }
+
+    // Soft delete - just deactivate
+    await usuario.update({ activo: false });
+
+    res.json({ message: 'Usuario desactivado correctamente' });
+  } catch (error) {
+    console.error('Error eliminando usuario:', error);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+};
+
+module.exports = {
+  listarUsuarios,
+  crearUsuario,
+  actualizarUsuario,
+  eliminarUsuario
+};

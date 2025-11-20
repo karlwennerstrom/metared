@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: metared-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: metared_perfiles
+      MYSQL_USER: metared_user
+      MYSQL_PASSWORD: metared_pass
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - metared-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: metared-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: metared_user
+      DB_PASSWORD: metared_pass
+      DB_NAME: metared_perfiles
+      JWT_SECRET: tu_super_secret_jwt_cambiar_en_produccion
+      JWT_EXPIRES_IN: 24h
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./data:/app/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - metared-network
+
+  frontend:
+    build: ./frontend
+    container_name: metared-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - metared-network
+
+volumes:
+  mysql_data:
+
+networks:
+  metared-network:
+    driver: bridge
