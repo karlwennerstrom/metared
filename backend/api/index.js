@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+require('pg');
 require('dotenv').config();
 
 const sequelize = require('../src/config/database');
@@ -14,7 +15,7 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://tu-dominio.vercel.app']
+    ? ['https://backend-three-beta-18.vercel.app/']
     : '*',
   credentials: true
 }));
