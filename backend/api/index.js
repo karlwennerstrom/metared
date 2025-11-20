@@ -12,7 +12,12 @@ const adminRoutes = require('../src/routes/admin.routes');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://tu-dominio.vercel.app']
+    : '*',
+  credentials: true
+}));
 app.use(express.json());
 
 // Health check
@@ -43,9 +48,11 @@ const connectDB = async () => {
     await sequelize.authenticate();
     console.log('Conexión a PostgreSQL establecida correctamente.');
 
-    // Sync models in production (only if needed)
-    await sequelize.sync();
-    console.log('Modelos sincronizados.');
+    // NO hacer sync en producción
+    if (process.env.NODE_ENV !== 'production') {
+      await sequelize.sync();
+      console.log('Modelos sincronizados.');
+    }
 
     isConnected = true;
   } catch (error) {

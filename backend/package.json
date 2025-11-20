@@ -2,10 +2,11 @@
   "name": "metared-perfiles-backend",
   "version": "1.0.0",
   "description": "API REST para MetaRed Perfiles UC",
-  "main": "src/index.js",
+  "main": "api/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "vercel-build": "echo 'No build needed for API'",
     "seed": "node src/scripts/seed.js",
     "create-admin": "node src/scripts/createAdmin.js",
     "migrate-data": "node src/scripts/migrateData.js"
