@@ -21,14 +21,14 @@ app.use(cors({
 app.use(express.json());
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/perfiles', perfilesRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/auth', authRoutes);
+app.use('/perfiles', perfilesRoutes);
+app.use('/admin', adminRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
