@@ -1,9 +1,20 @@
 {
-  "installCommand": "npm install && cd backend && npm install",
+  "version": 2,
+  "installCommand": "cd backend && npm install",
+  "functions": {
+    "backend/api/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api"
+      "destination": "/backend/api/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/backend/api/index.js"
     }
   ]
 }
