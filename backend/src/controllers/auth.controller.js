@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { Usuario } = require('../models');
+const { findUsuarioByEmail } = require('../db/usuarios.db');
 const { generateToken } = require('../config/jwt');
 
 // POST /api/auth/login
@@ -12,7 +12,7 @@ const login = async (req, res) => {
     }
 
     // Find user
-    const usuario = await Usuario.findOne({ where: { email } });
+    const usuario = await findUsuarioByEmail(email);
 
     if (!usuario) {
       return res.status(401).json({ error: 'Credenciales inválidas' });

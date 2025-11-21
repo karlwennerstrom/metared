@@ -1,17 +1,33 @@
 const bcrypt = require('bcryptjs');
-const { Usuario } = require('../models');
+const {
+  findUsuarioByEmail,
+  findUsuarioById,
+  findAllUsuarios,
+  createUsuario,
+  updateUsuario,
+  deactivateUsuario
+} = require('../db/usuarios.db');
 
 // GET /api/admin/usuarios - List all users
 const listarUsuarios = async (req, res) => {
   try {
-    const usuarios = await Usuario.findAll({
-      attributes: ['id', 'email', 'nombre', 'rol', 'activo', 'created_at'],
-      order: [['created_at', 'DESC']]
-    });
+    const usuarios = await findAllUsuarios();
+
+    // Sort by created_at DESC and format response
+    const usuariosOrdenados = usuarios
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .map(u => ({
+        id: u.id,
+        email: u.email,
+        nombre: u.nombre,
+        rol: u.rol,
+        activo: u.activo,
+        created_at: u.created_at
+      }));
 
     res.json({
-      data: usuarios,
-      total: usuarios.length
+      data: usuariosOrdenados,
+      total: usuariosOrdenados.length
     });
   } catch (error) {
     console.error('Error listando usuarios:', error);
@@ -20,7 +36,7 @@ const listarUsuarios = async (req, res) => {
 };
 
 // POST /api/admin/usuarios - Create new user
-const crearUsuario = async (req, res) => {
+const crearUsuarioController = async (req, res) => {
   try {
     const { email, password, nombre, rol } = req.body;
 
@@ -29,7 +45,7 @@ const crearUsuario = async (req, res) => {
     }
 
     // Check if email already exists
-    const existente = await Usuario.findOne({ where: { email } });
+    const existente = await findUsuarioByEmail(email);
     if (existente) {
       return res.status(400).json({ error: 'El email ya está registrado' });
     }
@@ -38,7 +54,7 @@ const crearUsuario = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const usuario = await Usuario.create({
+    const usuario = await createUsuario({
       email,
       password: passwordHash,
       nombre,
@@ -59,10 +75,10 @@ const crearUsuario = async (req, res) => {
 };
 
 // PUT /api/admin/usuarios/:id - Update user
-const actualizarUsuario = async (req, res) => {
+const actualizarUsuarioController = async (req, res) => {
   try {
     const { id } = req.params;
-    const usuario = await Usuario.findByPk(id);
+    const usuario = await findUsuarioById(id);
 
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -80,14 +96,14 @@ const actualizarUsuario = async (req, res) => {
       updateData.password = await bcrypt.hash(password, salt);
     }
 
-    await usuario.update(updateData);
+    const usuarioActualizado = await updateUsuario(id, updateData);
 
     res.json({
-      id: usuario.id,
-      email: usuario.email,
-      nombre: usuario.nombre,
-      rol: usuario.rol,
-      activo: usuario.activo
+      id: usuarioActualizado.id,
+      email: usuarioActualizado.email,
+      nombre: usuarioActualizado.nombre,
+      rol: usuarioActualizado.rol,
+      activo: usuarioActualizado.activo
     });
   } catch (error) {
     console.error('Error actualizando usuario:', error);
@@ -99,7 +115,7 @@ const actualizarUsuario = async (req, res) => {
 const eliminarUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const usuario = await Usuario.findByPk(id);
+    const usuario = await findUsuarioById(id);
 
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -111,7 +127,7 @@ const eliminarUsuario = async (req, res) => {
     }
 
     // Soft delete - just deactivate
-    await usuario.update({ activo: false });
+    await deactivateUsuario(id);
 
     res.json({ message: 'Usuario desactivado correctamente' });
   } catch (error) {
@@ -122,7 +138,7 @@ const eliminarUsuario = async (req, res) => {
 
 module.exports = {
   listarUsuarios,
-  crearUsuario,
-  actualizarUsuario,
+  crearUsuario: crearUsuarioController,
+  actualizarUsuario: actualizarUsuarioController,
   eliminarUsuario
 };

@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const sequelize = require('./config/database');
+const supabase = require('./config/supabase');
+const { initializeSearchIndex } = require('./services/search.service');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -33,21 +34,27 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Database connection and server start
+// Server start
 const startServer = async () => {
   try {
-    await sequelize.authenticate();
-    console.log('Conexión a PostgreSQL establecida correctamente.');
+    // Verify Supabase connection by making a simple query
+    const { error } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
 
-    // No hacer sync automático - las tablas ya existen en Supabase
-    // Si necesitas sincronizar, hazlo manualmente
-    console.log('Usando tablas existentes en la base de datos.');
+    if (error) {
+      console.error('Error conectando a Supabase:', error);
+      process.exit(1);
+    }
+
+    console.log('Conexión a Supabase establecida correctamente.');
+
+    // Initialize search index
+    await initializeSearchIndex();
 
     app.listen(PORT, () => {
       console.log(`Servidor corriendo en puerto ${PORT}`);
     });
   } catch (error) {
-    console.error('Error al conectar con la base de datos:', error);
+    console.error('Error al iniciar el servidor:', error);
     process.exit(1);
   }
 };

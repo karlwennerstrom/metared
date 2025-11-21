@@ -1,7 +1,14 @@
-const { Perfil } = require('../models');
+const {
+  findPerfilByCodigo,
+  findPerfilById,
+  findAllPerfiles,
+  createPerfil,
+  updatePerfil,
+  deletePerfil,
+  togglePerfilPublicado
+} = require('../db/perfiles.db');
 const { searchPerfiles, getFacets, refreshSearchIndex } = require('../services/search.service');
 const { generatePerfilPDF } = require('../services/pdf.service');
-const { Op } = require('sequelize');
 
 // Public controllers
 
@@ -49,9 +56,7 @@ const obtenerFacets = async (req, res) => {
 const obtenerPerfilPorCodigo = async (req, res) => {
   try {
     const { codigo } = req.params;
-    const perfil = await Perfil.findOne({
-      where: { codigo, publicado: true }
-    });
+    const perfil = await findPerfilByCodigo(codigo, true);
 
     if (!perfil) {
       return res.status(404).json({ error: 'Perfil no encontrado' });
@@ -68,10 +73,7 @@ const obtenerPerfilPorCodigo = async (req, res) => {
 const generarPDF = async (req, res) => {
   try {
     const { codigo } = req.params;
-    const perfil = await Perfil.findOne({
-      where: { codigo, publicado: true },
-      raw: true
-    });
+    const perfil = await findPerfilByCodigo(codigo, true);
 
     if (!perfil) {
       return res.status(404).json({ error: 'Perfil no encontrado' });
@@ -94,15 +96,12 @@ const generarPDF = async (req, res) => {
 const listarTodosPerfiles = async (req, res) => {
   try {
     const { publicado } = req.query;
-    const where = {};
+    const filters = {};
 
-    if (publicado === 'true') where.publicado = true;
-    if (publicado === 'false') where.publicado = false;
+    if (publicado === 'true') filters.publicado = true;
+    if (publicado === 'false') filters.publicado = false;
 
-    const perfiles = await Perfil.findAll({
-      where,
-      order: [['codigo', 'ASC']]
-    });
+    const perfiles = await findAllPerfiles(filters);
 
     res.json({
       data: perfiles,
@@ -135,12 +134,12 @@ const crearPerfil = async (req, res) => {
     }
 
     // Check if code already exists
-    const existente = await Perfil.findOne({ where: { codigo } });
+    const existente = await findPerfilByCodigo(codigo);
     if (existente) {
       return res.status(400).json({ error: 'El código ya existe' });
     }
 
-    const perfil = await Perfil.create({
+    const perfil = await createPerfil({
       codigo,
       nombre,
       categoria,
@@ -166,7 +165,7 @@ const crearPerfil = async (req, res) => {
 const actualizarPerfil = async (req, res) => {
   try {
     const { id } = req.params;
-    const perfil = await Perfil.findByPk(id);
+    const perfil = await findPerfilById(id);
 
     if (!perfil) {
       return res.status(404).json({ error: 'Perfil no encontrado' });
@@ -183,7 +182,7 @@ const actualizarPerfil = async (req, res) => {
       publicado
     } = req.body;
 
-    await perfil.update({
+    const updates = {
       nombre: nombre || perfil.nombre,
       categoria: categoria || perfil.categoria,
       area_conocimiento: area_conocimiento || perfil.area_conocimiento,
@@ -192,12 +191,14 @@ const actualizarPerfil = async (req, res) => {
       responsabilidades: responsabilidades !== undefined ? responsabilidades : perfil.responsabilidades,
       requisitos: requisitos !== undefined ? requisitos : perfil.requisitos,
       publicado: publicado !== undefined ? publicado : perfil.publicado
-    });
+    };
+
+    const perfilActualizado = await updatePerfil(id, updates);
 
     // Refresh search index
     await refreshSearchIndex();
 
-    res.json(perfil);
+    res.json(perfilActualizado);
   } catch (error) {
     console.error('Error actualizando perfil:', error);
     res.status(500).json({ error: 'Error al actualizar perfil' });
@@ -208,13 +209,13 @@ const actualizarPerfil = async (req, res) => {
 const eliminarPerfil = async (req, res) => {
   try {
     const { id } = req.params;
-    const perfil = await Perfil.findByPk(id);
+    const perfil = await findPerfilById(id);
 
     if (!perfil) {
       return res.status(404).json({ error: 'Perfil no encontrado' });
     }
 
-    await perfil.destroy();
+    await deletePerfil(id);
 
     // Refresh search index
     await refreshSearchIndex();
@@ -230,18 +231,17 @@ const eliminarPerfil = async (req, res) => {
 const togglePublicado = async (req, res) => {
   try {
     const { id } = req.params;
-    const perfil = await Perfil.findByPk(id);
 
-    if (!perfil) {
+    const perfilActualizado = await togglePerfilPublicado(id);
+
+    if (!perfilActualizado) {
       return res.status(404).json({ error: 'Perfil no encontrado' });
     }
-
-    await perfil.update({ publicado: !perfil.publicado });
 
     // Refresh search index
     await refreshSearchIndex();
 
-    res.json(perfil);
+    res.json(perfilActualizado);
   } catch (error) {
     console.error('Error cambiando estado:', error);
     res.status(500).json({ error: 'Error al cambiar estado' });

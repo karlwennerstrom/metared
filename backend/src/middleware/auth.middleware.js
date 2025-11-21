@@ -1,5 +1,5 @@
 const { verifyToken } = require('../config/jwt');
-const { Usuario } = require('../models');
+const { findUsuarioById } = require('../db/usuarios.db');
 
 // Verify JWT token
 const autenticar = async (req, res, next) => {
@@ -13,7 +13,7 @@ const autenticar = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
 
-    const usuario = await Usuario.findByPk(decoded.id);
+    const usuario = await findUsuarioById(decoded.id);
 
     if (!usuario || !usuario.activo) {
       return res.status(401).json({ error: 'Usuario no válido' });

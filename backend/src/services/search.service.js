@@ -1,5 +1,5 @@
 const Fuse = require('fuse.js');
-const { Perfil } = require('../models');
+const { findAllPublishedPerfiles } = require('../db/perfiles.db');
 
 let fuseIndex = null;
 let perfilesCache = [];
@@ -18,10 +18,7 @@ const fuseOptions = {
 
 const initializeSearchIndex = async () => {
   try {
-    perfilesCache = await Perfil.findAll({
-      where: { publicado: true },
-      raw: true
-    });
+    perfilesCache = await findAllPublishedPerfiles();
     fuseIndex = new Fuse(perfilesCache, fuseOptions);
     console.log(`Índice de búsqueda inicializado con ${perfilesCache.length} perfiles`);
   } catch (error) {
