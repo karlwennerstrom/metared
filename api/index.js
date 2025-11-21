@@ -2,24 +2,43 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const supabase = require('../backend/src/config/supabase');
-const { initializeSearchIndex } = require('../backend/src/services/search.service');
+const supabase = require('../src/config/supabase');
+const { initializeSearchIndex } = require('../src/services/search.service');
 
 // Import routes
-const authRoutes = require('../backend/src/routes/auth.routes');
-const perfilesRoutes = require('../backend/src/routes/perfiles.routes');
-const adminRoutes = require('../backend/src/routes/admin.routes');
+const authRoutes = require('../src/routes/auth.routes');
+const perfilesRoutes = require('../src/routes/perfiles.routes');
+const adminRoutes = require('../src/routes/admin.routes');
 
 const app = express();
 
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? '*'
+    ? (origin, callback) => {
+        // Allow all Vercel deployments
+        if (!origin || origin.endsWith('.vercel.app')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
     : '*',
   credentials: true
 }));
-app.use(express.json());
+// Body parser with error handling
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, res, buf, encoding) => {
+    try {
+      JSON.parse(buf);
+    } catch(e) {
+      console.error('JSON Parse Error:', e.message);
+      throw new Error('Invalid JSON');
+    }
+  }
+}));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -66,11 +85,20 @@ const initializeApp = async () => {
   }
 };
 
-// For Vercel serverless
-module.exports = async (req, res) => {
+// For Vercel serverless - export both the handler and config
+const handler = async (req, res) => {
   await initializeApp();
   return app(req, res);
 };
+
+// Disable Vercel's built-in body parsing
+handler.config = {
+  api: {
+    bodyParser: false
+  }
+};
+
+module.exports = handler;
 
 // For local development
 if (require.main === module) {
