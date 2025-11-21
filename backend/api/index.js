@@ -15,7 +15,14 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://frontend-ho7nz9ydp-karl-heinzs-projects.vercel.app', 'https://metared-dawrj5879-karl-heinzs-projects.vercel.app']
+    ? (origin, callback) => {
+        // Allow all Vercel deployments
+        if (!origin || origin.endsWith('.vercel.app')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
     : '*',
   credentials: true
 }));
