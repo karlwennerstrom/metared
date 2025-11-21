@@ -2,13 +2,13 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const supabase = require('../src/config/supabase');
-const { initializeSearchIndex } = require('../src/services/search.service');
+const supabase = require('../backend/src/config/supabase');
+const { initializeSearchIndex } = require('../backend/src/services/search.service');
 
 // Import routes
-const authRoutes = require('../src/routes/auth.routes');
-const perfilesRoutes = require('../src/routes/perfiles.routes');
-const adminRoutes = require('../src/routes/admin.routes');
+const authRoutes = require('../backend/src/routes/auth.routes');
+const perfilesRoutes = require('../backend/src/routes/perfiles.routes');
+const adminRoutes = require('../backend/src/routes/admin.routes');
 
 const app = express();
 
