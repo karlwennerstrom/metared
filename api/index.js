@@ -27,18 +27,25 @@ app.use(cors({
   credentials: true
 }));
 
-// Body parser - simple configuration
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Custom body parser to handle Vercel's quirks
+app.use(express.text({ type: '*/*', limit: '10mb' }));
 
-// Error handler for JSON parsing
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    console.error('JSON malformado recibido:', err.message);
-    console.error('Body recibido:', req.body);
-    return res.status(400).json({ error: 'El formato del JSON enviado es inválido' });
+// Manual JSON parsing middleware
+app.use((req, res, next) => {
+  if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+    try {
+      if (typeof req.body === 'string' && req.body.trim()) {
+        req.body = JSON.parse(req.body);
+      } else if (typeof req.body === 'object') {
+        // Body already parsed, leave as is
+      }
+    } catch (e) {
+      console.error('Error parsing JSON:', e.message);
+      console.error('Raw body:', req.body);
+      return res.status(400).json({ error: 'Invalid JSON format' });
+    }
   }
-  next(err);
+  next();
 });
 
 // Health check
