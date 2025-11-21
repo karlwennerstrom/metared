@@ -3,8 +3,8 @@
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-const sequelize = require('../config/database');
-const { Usuario } = require('../models');
+const supabase = require('../config/supabase');
+const { createUsuario, findUsuarioByEmail } = require('../db/usuarios.db');
 
 const createAdmin = async () => {
   try {
@@ -27,15 +27,16 @@ const createAdmin = async () => {
       process.exit(1);
     }
 
-    // Connect to database
-    await sequelize.authenticate();
-    console.log('Conexión a la base de datos establecida.');
-
-    // Sync models
-    await sequelize.sync();
+    // Test Supabase connection
+    const { error: connError } = await supabase.from('usuarios').select('count', { count: 'exact', head: true });
+    if (connError) {
+      console.error('Error conectando a Supabase:', connError);
+      process.exit(1);
+    }
+    console.log('Conexión a Supabase establecida.');
 
     // Check if user already exists
-    const existente = await Usuario.findOne({ where: { email } });
+    const existente = await findUsuarioByEmail(email);
     if (existente) {
       console.error(`Error: El usuario ${email} ya existe.`);
       process.exit(1);
@@ -46,7 +47,7 @@ const createAdmin = async () => {
     const passwordHash = await bcrypt.hash(password, salt);
 
     // Create superadmin user
-    const usuario = await Usuario.create({
+    const usuario = await createUsuario({
       email,
       password: passwordHash,
       nombre,

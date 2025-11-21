@@ -5,17 +5,17 @@ const path = require('path');
 const { parse } = require('csv-parse/sync');
 require('dotenv').config();
 
-const sequelize = require('../config/database');
-const { Perfil } = require('../models');
+const supabase = require('../config/supabase');
 
 const seedPerfiles = async () => {
   try {
-    // Connect to database
-    await sequelize.authenticate();
-    console.log('Conexión a la base de datos establecida.');
-
-    // Sync models
-    await sequelize.sync();
+    // Test Supabase connection
+    const { error: connError } = await supabase.from('perfiles').select('count', { count: 'exact', head: true });
+    if (connError) {
+      console.error('Error conectando a Supabase:', connError);
+      process.exit(1);
+    }
+    console.log('Conexión a Supabase establecida.');
 
     // Find CSV file
     const csvPath = path.join(__dirname, '../../data/MetaRed_Perfiles_TI__250301_ORIGINAL_UNIFICADO_xlsx_-_TODOS.csv');
@@ -40,10 +40,13 @@ const seedPerfiles = async () => {
     console.log(`📊 Se encontraron ${records.length} registros en el CSV`);
 
     // Clear existing profiles (optional - comment out if you want to keep existing)
-    const existingCount = await Perfil.count();
+    const { count: existingCount, error: countError } = await supabase
+      .from('perfiles')
+      .select('*', { count: 'exact', head: true });
+
     if (existingCount > 0) {
       console.log(`🗑️  Eliminando ${existingCount} perfiles existentes...`);
-      await Perfil.destroy({ where: {}, truncate: true });
+      await supabase.from('perfiles').delete().neq('id', 0); // Delete all
     }
 
     // Map CSV columns to model fields
@@ -122,11 +125,17 @@ const seedPerfiles = async () => {
     // Bulk insert
     console.log(`\n💾 Insertando ${perfilesToCreate.length} perfiles en la base de datos...`);
 
-    // Insert in batches of 100
+    // Insert in batches of 100 (Supabase limit)
     const batchSize = 100;
     for (let i = 0; i < perfilesToCreate.length; i += batchSize) {
       const batch = perfilesToCreate.slice(i, i + batchSize);
-      await Perfil.bulkCreate(batch, { ignoreDuplicates: true });
+      const { error: insertError } = await supabase
+        .from('perfiles')
+        .insert(batch);
+
+      if (insertError) {
+        console.error(`\nError en batch ${i}-${i + batchSize}:`, insertError);
+      }
       process.stdout.write(`\r   Progreso: ${Math.min(i + batchSize, perfilesToCreate.length)}/${perfilesToCreate.length}`);
     }
 
@@ -135,7 +144,11 @@ const seedPerfiles = async () => {
     console.log(`   - Errores: ${errors}`);
 
     // Show sample of imported data
-    const sample = await Perfil.findAll({ limit: 3 });
+    const { data: sample } = await supabase
+      .from('perfiles')
+      .select('codigo, nombre, categoria')
+      .limit(3);
+
     console.log('\n📋 Muestra de datos importados:');
     sample.forEach(p => {
       console.log(`   - ${p.codigo}: ${p.nombre} (${p.categoria})`);

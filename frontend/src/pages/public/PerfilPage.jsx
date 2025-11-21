@@ -50,9 +50,27 @@ const PerfilPage = () => {
     window.print();
   };
 
+  const renderTexto = (texto) => {
+    if (!texto) return null;
+    // Reemplazar \n literales (texto) por saltos de línea reales
+    const textoConSaltos = texto.replace(/\\n/g, '\n');
+    const lineas = textoConSaltos.split('\n').filter(linea => linea.trim());
+    return (
+      <div className="space-y-2">
+        {lineas.map((linea, index) => (
+          <p key={index} className="text-polar-700 dark:text-polar-300 leading-relaxed">
+            {linea.trim()}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
   const renderLista = (texto) => {
     if (!texto) return null;
-    const items = texto.split('\n').filter(item => item.trim());
+    // Reemplazar \n literales (texto) por saltos de línea reales
+    const textoConSaltos = texto.replace(/\\n/g, '\n');
+    const items = textoConSaltos.split('\n').filter(item => item.trim());
     return (
       <ul className="space-y-2">
         {items.map((item, index) => (
@@ -166,9 +184,7 @@ const PerfilPage = () => {
                 Descripción del Cargo
               </h2>
               <div className="card p-6">
-                <p className="text-polar-700 dark:text-polar-300 leading-relaxed">
-                  {perfil.descripcion}
-                </p>
+                {renderTexto(perfil.descripcion)}
               </div>
             </section>
           )}
