@@ -5,7 +5,8 @@
       "src": "backend/api/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["backend/**"]
+        "includeFiles": ["backend/**"],
+        "maxDuration": 10
       }
     }
   ],
@@ -14,5 +15,11 @@
       "src": "/(.*)",
       "dest": "/backend/api/index.js"
     }
-  ]
+  ],
+  "functions": {
+    "backend/api/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 }

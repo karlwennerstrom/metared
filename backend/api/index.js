@@ -26,7 +26,8 @@ app.use(cors({
     : '*',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -77,6 +78,13 @@ const initializeApp = async () => {
 module.exports = async (req, res) => {
   await initializeApp();
   return app(req, res);
+};
+
+// Disable Vercel's built-in body parsing
+module.exports.config = {
+  api: {
+    bodyParser: false
+  }
 };
 
 // For local development
