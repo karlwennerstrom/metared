@@ -15,11 +15,5 @@
       "src": "/(.*)",
       "dest": "/backend/api/index.js"
     }
-  ],
-  "functions": {
-    "backend/api/index.js": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
-  }
+  ]
 }
